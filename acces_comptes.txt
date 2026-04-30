@@ -1,0 +1,13 @@
+=== COMPTES DU SYSTEME DE GESTION DE BIBLIOTHEQUE ===
+
+Ces deux comptes ont été configurés en base de données et disposent de toutes les permissions nécessaires.
+
+1) COMPTE ADMINISTRATEUR (Accès Total)
+Email : admin@biblio.local
+Mot de passe : admin123
+
+2) COMPTE BIBLIOTHECAIRE (Librarian - Gestion catalogue documentaire)
+Email : librarian@biblio.local
+Mot de passe : lib123
+
+Si vous souhaitez changer ces mots de passe plus tard, vous pourrez le faire depuis la section Profile du Frontend !

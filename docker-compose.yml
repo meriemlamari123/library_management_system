@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  # --- Infrastructure ---
+  consul:
+    image: hashicorp/consul:latest
+    ports:
+      - "8500:8500"
+    command: "agent -dev -client=0.0.0.0"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+  traefik:
+    image: traefik:v3.1
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+
+  # --- Backend Services ---
+  user-service:
+    build: ./backend/user_service
+    environment:
+      - CONSUL_HOST=consul
+      - RABBITMQ_HOST=rabbitmq
+      - DATABASE_URL=sqlite:///db.sqlite3
+    depends_on:
+      - consul
+    labels:
+      - "traefik.http.routers.user-service.rule=PathPrefix(`/api/users`)"
+      - "traefik.http.services.user-service.loadbalancer.server.port=8000"
+
+  books-service:
+    build: ./backend/books_service
+    environment:
+      - CONSUL_HOST=consul
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      - consul
+    labels:
+      - "traefik.http.routers.books-service.rule=PathPrefix(`/api/books`)"
+      - "traefik.http.services.books-service.loadbalancer.server.port=8000"
+
+  loans-service:
+    build: ./backend/loans_service
+    environment:
+      - CONSUL_HOST=consul
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      - consul
+      - rabbitmq
+    labels:
+      - "traefik.http.routers.loans-service.rule=PathPrefix(`/api/loans`)"
+      - "traefik.http.services.loans-service.loadbalancer.server.port=8000"
+
+  notification-service:
+    build: ./backend/library_notifications_service
+    environment:
+      - CONSUL_HOST=consul
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      - consul
+      - rabbitmq
+
+  # --- Frontend ---
+  frontend:
+    build: ./frontend
+    ports:
+      - "8081:80"
+    depends_on:
+      - user-service
+      - books-service
